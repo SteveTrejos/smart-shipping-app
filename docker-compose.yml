@@ -1,0 +1,17 @@
+name: postgres-container
+services:
+  db:
+    image: postgres:15 
+    container_name: smart-shipping-db
+    environment:
+      POSTGRES_USER: db-admin
+      POSTGRES_PASSWORD: anypassword
+      POSTGRES_DB: smart_shipping-api
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persistencia de los datos
+
+volumes:
+  postgres_data:
+    driver: local
