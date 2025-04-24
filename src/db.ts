@@ -31,6 +31,8 @@ const db = new sql({
   },
 })
 
-const query = await sql`SELECT NOW()`.execute();
-const result = await query;
-console.log(result, 'result');
+
+console.log(await sql`  SELECT table_name
+  FROM information_schema.tables
+  WHERE table_schema = 'public'
+  AND table_type = 'BASE TABLE'`.execute(), 'tablas');
