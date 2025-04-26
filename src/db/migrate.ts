@@ -49,6 +49,7 @@ await sql.begin(async tx => {
     `;
 
     //couriers table creation
+    //TODO create the migration to add the column role to the table
     await tx`
         CREATE TABLE couriers(
             id SERIAL,

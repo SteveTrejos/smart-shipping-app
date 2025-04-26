@@ -31,6 +31,7 @@ export class UserModel{
         return user || null;
     }
 
+    //TODO update the query for user to update just one field or multiple fields 
     static async updateUser(user: Partial<User>): Promise<boolean> {
         try {
             const {name, email, id} = user;
