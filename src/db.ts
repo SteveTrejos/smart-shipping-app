@@ -10,7 +10,7 @@ const db = new sql({
     connectionTimeout: 30, // Timeout when establishing new connections
   
     // SSL/TLS options
-    tls: true,
+    // tls: true,
     // tls: {
     //   rejectUnauthorized: true,
     //   requestCert: true,
@@ -31,8 +31,9 @@ const db = new sql({
   },
 })
 
-
-console.log(await sql`  SELECT table_name
-  FROM information_schema.tables
-  WHERE table_schema = 'public'
-  AND table_type = 'BASE TABLE'`.execute(), 'tablas');
+const result = await db.connect()
+console.log(result)
+// console.log(await sql`  SELECT table_name
+//   FROM information_schema.tables
+//   WHERE table_schema = 'public'
+//   AND table_type = 'BASE TABLE'`.execute(), 'tablas');

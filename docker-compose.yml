@@ -11,6 +11,49 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data  # Persistencia de los datos
+  backend:
+    image: oven/bun:latest
+    container_name: "backend"
+    volumes:
+      - .:/app
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - POSTGRES_URL=postgres://db-admin:anypassword@db:5432/smart_shipping-api
+    depends_on:
+      - db
 volumes:
   postgres_data:
     driver: local
+
+# version: "3.9"
+# services:
+#   backend:
+#     build: .
+#     container_name: smart-shipping-backend
+#     ports:
+#       - "3000:3000"
+#     depends_on:
+#       - db
+#     environment:
+#       - DATABASE_URL=postgres://db-admin:anypassword@db:5432/smart_shipping-api
+#     volumes:
+#       - .:/app
+
+#   db:
+#     image: postgres:15
+#     container_name: smart-shipping-db
+#     restart: always
+#     environment:
+#       POSTGRES_USER: db-admin
+#       POSTGRES_PASSWORD: anypassword
+#       POSTGRES_DB: smart_shipping-api
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+
+# volumes:
+#   postgres_data:
+
