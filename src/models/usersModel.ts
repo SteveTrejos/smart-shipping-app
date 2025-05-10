@@ -1,20 +1,24 @@
+import type { Shipment } from '../interfaces/shipmentInterface';
 import {type User} from '../interfaces/userInterface';
 import {sql} from 'bun';
 
 export class UserModel{
-    static async registerUser(name: string, email: string, password: string, role = 'customer'): Promise<User> {
-        const emailExists = await this.validateRegisteredEmail(email);
-        if ( !emailExists ) throw new Error('Email already exists');
-        const bcryptHash = await Bun.password.hash(password, {
+    static async createUser(user: User): Promise<User> {
+            const {password, ...noPasswordUser} = user;
+            const emailExists = await this.getUserEmail(noPasswordUser?.email);
+            if ( emailExists !== null ) throw new Error('Email already exists');
+            const bcryptHash = await Bun.password.hash(password, {
             algorithm: "bcrypt",
             cost: 10,
-          });
-
-        const [user] = await sql`
-            INSERT INTO users
-            (name, email, password, role)
-            VALUES(${name}, ${email}, ${bcryptHash}, ${role}) RETURNING *`;
-        return user;
+            });
+            
+            const newUser = {
+                ...noPasswordUser,
+                password: bcryptHash
+            }
+            const [userResult] = await sql`
+            INSERT INTO users ${sql(newUser)} RETURNING *`;
+            return userResult;
     }
 
     static async getUserByEmail(email: string): Promise<User | null>{
@@ -31,16 +35,18 @@ export class UserModel{
         return user || null;
     }
 
-    //TODO update the query for user to update just one field or multiple fields 
     static async updateUser(user: Partial<User>): Promise<boolean> {
         try {
-            const {name, email, id} = user;
-            if(id){
-                const userIdExists = await this.getUserById(id);
-                if (userIdExists === null) throw new Error(`User id doesn't exists. Can't update any register`)
-            }
+            const {id, ...fieldsToUpdate} = user;
+            if(!id) throw new Error('User id is required to update');
+
+            const userIdExists = await this.getUserById(id);
+            if (userIdExists === null) throw new Error(`User id doesn't exists. Can't update any register`);
+
+            if(Object.keys(fieldsToUpdate).length === 0) throw new Error('No fields to update');
+
             await sql`
-                UPDATE users SET name = ${name}, email = ${email} WHERE id = ${id}
+                UPDATE users SET ${sql(fieldsToUpdate)} WHERE id = ${id}
             `;
             return true;
         } catch (err) {
@@ -51,8 +57,10 @@ export class UserModel{
 
     static async deleteUser(userId: number): Promise<boolean>{
         try{
+            const userIdExists = await this.getUserById(userId);
+            if (userIdExists === null) throw new Error(`User id doesn't exists. Can't update any register`);
             await sql`
-                DELETE FROM users WHERE id = ${userId}
+                UPDATE users SET user_status = 'I' WHERE id = ${userId}
             `;
             return true;
         }catch(err){
@@ -61,17 +69,25 @@ export class UserModel{
         }
     }
 
-    static async updatePassword(user: Partial<User>): Promise<boolean | undefined>{
-        const {password, id} = user;
-        const isPasswordValid = this.validatePassword(password);
+    static async updatePassword(user: Partial<User>, actualPassword: string): Promise<boolean>{
+        const {password: newPassword, id} = user;
+        const isPasswordValid = this.validatePassword(newPassword);
         try{
             if(id){
                 const userIdExists = await this.getUserById(id);
                 if (userIdExists === null) throw new Error(`User id doesn't exists. Can't update any register`)
             }
 
-            if ( typeof password === 'string' && isPasswordValid ) {
-                const bcryptNewPassword = await Bun.password.hash(password, {
+            if (typeof newPassword !== 'string' || !isPasswordValid || typeof actualPassword !== 'string' || actualPassword.length === 0) return false;
+
+            const [userRegistered] = await sql`SELECT password FROM users WHERE id = ${id} `;
+            const {password: registeredPassword} = userRegistered;
+
+            if(!userRegistered.password || userRegistered === undefined) return false;
+
+            const isMatch = await Bun.password.verify(actualPassword, registeredPassword )
+            if(isMatch){
+                const bcryptNewPassword = await Bun.password.hash(newPassword, {
                     algorithm: 'bcrypt',
                     cost: 10
                 });
@@ -80,6 +96,7 @@ export class UserModel{
                 `;
                 return true;
             }
+            return false;
         }catch(err){
             console.error(`Error updating the password ${err}`);
             return false;
@@ -114,12 +131,63 @@ export class UserModel{
         }
     }
 
-    static async validateRegisteredEmail(email: string): Promise<boolean>{
+    static async getUserEmail(email: string): Promise<string | null>{
         if ( email === undefined || !email) throw new Error('Invalid parameters on function "validateRegisteredEmail"');
 
         const result = await sql`
             SELECT email FROM users WHERE email = ${email}
         `;
-        return result.length > 0;
+        return result[0].email || null;
+    }
+
+    static async getAllShipments(userId: number): Promise<Shipment[]>{
+        if( !userId ) throw new Error('Invalid parameters on function "getAllShipments"');
+        try{
+            const result = await sql`SELECT * FROM shipments WHERE user_id = ${userId} AND shipment_status = 'A' AND EXISTS (SELECT 1 FROM users WHERE id = ${userId}`;
+            return result;
+        }catch(err){
+            console.error(`Error getting all the shipments. ${err}`);
+            return [];
+        }
+    }
+
+    static async getShipmentById(shipmentId: number): Promise<Shipment | null>{
+        if(!shipmentId) throw new Error('Invalid parameters on function "getShipmentById"');
+        try{
+            const result = await sql`SELECT * FROM shipments WHERE id = ${shipmentId} AND shipment_status = 'A' AND EXISTS (SELECT 1 FROM shipments WHERE id = ${shipmentId}`;
+            return result || null;
+        }catch(err){
+            console.error(`Error getting the shipment. ${err}`);
+            return null;
+        }
+    }
+
+    static async cancelShipmentById(shipmentId: number): Promise<boolean>{
+        if(!shipmentId) throw new Error('Invalid parameters on function "cancelShipmentById"');
+        try{
+            const shipment = await sql`SELECT * FROM shipments WHERE id = ${shipmentId} AND shipment_status = 'A'`;
+            if(shipment.length > 0){
+                const {shipment_status} = shipment[0];
+                if(shipment_status === 'P' || shipment_status === 'A'){
+                    await sql`UPDATE shipments SET shipment_status = 'I' WHERE id = ${shipmentId}`;
+                    return true;
+                }
+            }
+            return false;
+        }catch(err){
+            console.error(`Error cancelling the shipment. ${err}`);
+            return false;
+        }
+    }
+
+    static async createShipment(shipment: Partial<Shipment>): Promise<Shipment | null>{
+        if(!shipment) throw new Error('Invalid parameters on function "createShipment"');
+        try{
+            const [result] = await sql`INSERT INTO shipments ${sql(shipment)} RETURNING *`;
+            return result || null;
+        }catch(err){
+            console.error(`Error creating the shipment. ${err}`);
+            return null;
+        }
     }
 }
