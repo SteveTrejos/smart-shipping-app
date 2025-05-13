@@ -14,6 +14,7 @@ services:
   backend:
     image: oven/bun:latest
     container_name: "backend"
+    command: bun run src/index.ts
     volumes:
       - .:/app
     working_dir: /app
