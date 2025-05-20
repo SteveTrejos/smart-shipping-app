@@ -1,9 +1,13 @@
+import type { CreateShipmentDTO } from '../dto/shipments/createShipment.dto';
+import type { CreateUserDTO } from '../dto/users/createUser.dto';
+import type { UpdateUserDTO } from '../dto/users/updateUser.dto';
+import type { UserPasswordUpdateDTO } from '../dto/users/userPasswordUpdate.dto';
 import type { Shipment } from '../interfaces/shipmentInterface';
 import {type User} from '../interfaces/userInterface';
 import {sql} from 'bun';
 
 export class UserModel{
-    static async createUser(user: User): Promise<User> {
+    static async createUser(user: CreateUserDTO): Promise<User> {
             const {password, ...noPasswordUser} = user;
             const emailExists = await this.getUserEmail(noPasswordUser?.email);
             if ( emailExists !== null ) throw new Error('Email already exists');
@@ -35,7 +39,7 @@ export class UserModel{
         return user || null;
     }
 
-    static async updateUser(user: Partial<User>): Promise<boolean> {
+    static async updateUser(user: Partial<UpdateUserDTO>): Promise<boolean> {
         try {
             const {id, ...fieldsToUpdate} = user;
             if(!id) throw new Error('User id is required to update');
@@ -69,8 +73,8 @@ export class UserModel{
         }
     }
 
-    static async updatePassword(user: Partial<User>, actualPassword: string): Promise<boolean>{
-        const {password: newPassword, id} = user;
+    static async updatePassword(user: UserPasswordUpdateDTO): Promise<boolean>{
+        const {actualPassword, newPassword, id} = user;
         const isPasswordValid = this.validatePassword(newPassword);
         try{
             if(id){
@@ -180,7 +184,7 @@ export class UserModel{
         }
     }
 
-    static async createShipment(shipment: Partial<Shipment>): Promise<Shipment | null>{
+    static async createShipment(shipment: CreateShipmentDTO): Promise<Shipment | null>{
         if(!shipment) throw new Error('Invalid parameters on function "createShipment"');
         try{
             const [result] = await sql`INSERT INTO shipments ${sql(shipment)} RETURNING *`;
