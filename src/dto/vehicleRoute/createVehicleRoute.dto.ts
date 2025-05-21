@@ -4,5 +4,6 @@ export interface CreateVehicleRouteDTO{
     origin_place: string;
     destination_place: string;
     departure_time: string;
-    admin_id: number;
+    admin_id: number | null;
+    courier_id: number | null;
 }

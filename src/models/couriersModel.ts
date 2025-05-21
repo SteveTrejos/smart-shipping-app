@@ -5,6 +5,9 @@ import type { UpdateCourierDTO } from "../dto/couriers/updateCourier.dto";
 import type { UpdateArrivalTimeDTO } from "../dto/couriers/updateArrivalTime.dto";
 import type { UpdateRouteDetailsDTO } from "../dto/couriers/updateRouteDetails.dto";
 import type { UpdateDepartureTimeDTO } from "../dto/couriers/updateDepartureTime.dto";
+import type { CreateVehicleRouteDTO } from "../dto/vehicleRoute/createVehicleRoute.dto";
+import type { VehicleRoute } from "../interfaces/vehicleRouteInterface";
+import { VehicleRouteModel } from "./VehicleRoutesModel";
 
 export class CourierModel{
     static async createCourier(courier: CreateCourierDTO): Promise<Courier | null>{
@@ -175,6 +178,18 @@ export class CourierModel{
         }catch (err) {
             console.error(`Error updating the departure time. ${err }`);
             return false;
+        }
+    }
+
+    static async createVehicleRoute(routeDetails: CreateVehicleRouteDTO): Promise<VehicleRoute | null>{
+        if(!routeDetails || Object.keys(routeDetails).length === 0) throw new Error('Invalid parameters in function "createVehicleRoute from courier');
+        try {
+            const newVehicleRoute = await VehicleRouteModel.createVehicleRoute(routeDetails);
+            if(!newVehicleRoute || Object.keys(newVehicleRoute).length === 0) return null;
+            return newVehicleRoute;
+        }catch (err) {
+            console.error(`Error creating the vehicle route from courier.  ${err }`);
+            return null;
         }
     }
 }
