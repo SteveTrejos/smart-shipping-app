@@ -17,7 +17,7 @@ await sql.begin(async tx => {
 
     await tx`
         CREATE TRIGGER update_users
-        AFTER UPDATE
+        BEFORE UPDATE
         ON users
         FOR EACH ROW
         EXECUTE FUNCTION set_users_updated_at();
