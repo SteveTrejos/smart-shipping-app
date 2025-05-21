@@ -1,8 +1,9 @@
-const server = Bun.serve({
-  port: 3000,
-  fetch(request) {
-    return new Response("Welcome to Bun!");
-  },
-});
+import express from 'express';
+import router from './routes/users';
+const app = express();
 
-console.log(`Listening on ${server.url}`);
+app.use('/', router);
+
+app.listen(3000, () =>
+  console.log('Example app listening on port 3000!'),
+);
