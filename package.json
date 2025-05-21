@@ -4,11 +4,14 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "bun run index.ts"
+    "start": "bun run index.ts",
+    "dev": "bun --hot run src/index.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/express": "^5.0.2"
+    "@types/express": "^5.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "peerDependencies": {
     "typescript": "^5"

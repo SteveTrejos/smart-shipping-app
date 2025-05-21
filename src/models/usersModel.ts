@@ -63,10 +63,10 @@ export class UserModel{
 
             if(Object.keys(fieldsToUpdate).length === 0) throw new Error('No fields to update');
 
-            await sql`
-                UPDATE users SET ${sql(fieldsToUpdate)} WHERE id = ${id}
+            const isUserUpdated = await sql`
+                UPDATE users SET ${sql(fieldsToUpdate)} WHERE id = ${id} RETURNING *
             `;
-            return true;
+            return isUserUpdated;
         } catch (err) {
             console.error(`Error updating the user ${err}`);
             return false;
