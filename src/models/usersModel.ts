@@ -5,6 +5,7 @@ import type { UserPasswordUpdateDTO } from '../dto/users/userPasswordUpdate.dto'
 import type { Shipment } from '../interfaces/shipmentInterface';
 import {type User} from '../interfaces/userInterface';
 import {sql} from 'bun';
+import { ShipmentModel } from './shipmentsModel';
 
 export class UserModel{
     static async createUser(user: CreateUserDTO): Promise<User> {
@@ -23,6 +24,19 @@ export class UserModel{
             const [userResult] = await sql`
             INSERT INTO users ${sql(newUser)} RETURNING *`;
             return userResult;
+    }
+
+    //method that validates the type passed as a parameter in the admin method "validateUserDetailsToChangePassword"
+    static isUserDetailsValidation(obj: any): boolean{
+        return (
+            typeof obj === 'object' && 
+            obj !== null &&
+            typeof obj.name === 'string' && 
+            typeof obj.last_name === 'string' &&
+            typeof obj.phone === 'string' && 
+            typeof obj.email === 'string' &&
+            typeof obj.document_id === 'string'
+        )
     }
 
     static async getUserByEmail(email: string): Promise<User | null>{
@@ -155,13 +169,35 @@ export class UserModel{
         }
     }
 
+    static async getAllShipmentsByUserId(userId: number): Promise<Shipment[] | []>{
+        if(!userId) throw new Error('Invalid parameters in function "getAllShipmentsByUserId"');
+        try {
+            const shipments = await sql`SELECT * FROM shipments WHERE user_id = ${userId}`;
+            return shipments;
+        }catch (err) {
+            console.error(`Error getting all the user shipments. ${err }`);
+            return [];
+        }
+    }
+
+    static async getShipmentByTrackId(trackId: string): Promise<Shipment | null>{
+        if(!trackId) throw new Error('Invalid parameters in function "getShipmentByTrackId"');
+        try {
+            const shipment = await ShipmentModel.getShipmentByTrackId(trackId);
+            return shipment;
+        }catch (err) {
+            console.error(`Error getting the shipment from user. ${err }`);
+            return null;
+        }
+    }
+
     static async getShipmentById(shipmentId: number): Promise<Shipment | null>{
         if(!shipmentId) throw new Error('Invalid parameters on function "getShipmentById"');
         try{
-            const result = await sql`SELECT * FROM shipments WHERE id = ${shipmentId} AND shipment_status = 'A' AND EXISTS (SELECT 1 FROM shipments WHERE id = ${shipmentId}`;
-            return result || null;
+            const result = await ShipmentModel.getShipmentById(shipmentId);
+            return result;
         }catch(err){
-            console.error(`Error getting the shipment. ${err}`);
+            console.error(`Error getting the shipment from user. ${err}`);
             return null;
         }
     }
@@ -169,17 +205,11 @@ export class UserModel{
     static async cancelShipmentById(shipmentId: number): Promise<boolean>{
         if(!shipmentId) throw new Error('Invalid parameters on function "cancelShipmentById"');
         try{
-            const shipment = await sql`SELECT * FROM shipments WHERE id = ${shipmentId} AND shipment_status = 'A'`;
-            if(shipment.length > 0){
-                const {shipment_status} = shipment[0];
-                if(shipment_status === 'P' || shipment_status === 'A'){
-                    await sql`UPDATE shipments SET shipment_status = 'I' WHERE id = ${shipmentId}`;
-                    return true;
-                }
-            }
-            return false;
+            const shipment = await ShipmentModel.cancelShipmentById(shipmentId);
+            if(!shipment) return false;
+            return true;
         }catch(err){
-            console.error(`Error cancelling the shipment. ${err}`);
+            console.error(`Error cancelling the shipment from user. ${err}`);
             return false;
         }
     }
@@ -187,10 +217,10 @@ export class UserModel{
     static async createShipment(shipment: CreateShipmentDTO): Promise<Shipment | null>{
         if(!shipment) throw new Error('Invalid parameters on function "createShipment"');
         try{
-            const [result] = await sql`INSERT INTO shipments ${sql(shipment)} RETURNING *`;
-            return result || null;
+            const newShipment = await ShipmentModel.createShipment(shipment);
+            return newShipment || null;
         }catch(err){
-            console.error(`Error creating the shipment. ${err}`);
+            console.error(`Error creating the shipment from user. ${err}`);
             return null;
         }
     }

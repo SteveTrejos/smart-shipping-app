@@ -2,6 +2,9 @@ import { sql } from "bun";
 import type { Courier } from "../interfaces/courierInterface";
 import type { CreateCourierDTO } from "../dto/couriers/createCourier.dto";
 import type { UpdateCourierDTO } from "../dto/couriers/updateCourier.dto";
+import type { UpdateArrivalTimeDTO } from "../dto/couriers/updateArrivalTime.dto";
+import type { UpdateRouteDetailsDTO } from "../dto/couriers/updateRouteDetails.dto";
+import type { UpdateDepartureTimeDTO } from "../dto/couriers/updateDepartureTime.dto";
 
 export class CourierModel{
     static async createCourier(courier: CreateCourierDTO): Promise<Courier | null>{
@@ -33,7 +36,7 @@ export class CourierModel{
         }
     }
 
-    static async updateCourier(courier: UpdateCourierDTO): Promise<boolean>{
+    static async updateCourier(courier: Partial<UpdateCourierDTO>): Promise<boolean>{
         if ( courier === null || courier === undefined ) throw new Error('Invalid parameters at "updateCourier"');
         try{
             const {id, ...fieldsToUpdate} = courier;
@@ -62,6 +65,19 @@ export class CourierModel{
             }
             return null;
         }
+    }
+
+    static async getCourierByDocumentId(documentId: number): Promise<Courier | null>{
+        if(!documentId) throw new Error('Invalid parameters in function "getCourierByDocumentId"');
+        try {
+            const courier = await sql`SELECT * FROM couriers WHERE document_id = ${documentId}`;
+            if(!courier || Object.keys(courier).length === 0) return null;
+            return courier;
+        }catch (err) {
+            console.error(`Error getting the courier. ${err }`);
+            return null;
+        }
+
     }
 
     static async deleteCourier(courierId: number): Promise<boolean>{
@@ -94,8 +110,8 @@ export class CourierModel{
         }
     }
 
-    static async updateCourierVehicle(courierId: number, vehicleId: number): Promise<boolean>{
-        if(!courierId || !vehicleId) throw new Error(`Invalid parameters at "updateCourierVehicle"`);
+    static async assignCourierToVehicle(courierId: number, vehicleId: number): Promise<boolean>{
+        if(!courierId || !vehicleId) throw new Error(`Invalid parameters at "assignCourierToVehicle"`);
 
         try{
             const [updatedCourier] = await sql`
@@ -111,15 +127,54 @@ export class CourierModel{
         }
     }
 
-    static async updateArrivalTime(){
-        
+    static async removeCourierVehicle(courierId: number){
+        if(!courierId) throw new Error('Invalid parameters in function "removeCourierVehicle"');
+        try {
+            const updatedCourier = await sql`UPDATE couriers SET vehicle_id = null WHERE id = ${courierId} RETURNING *`;
+            if(!updatedCourier || Object.keys(updatedCourier).length === 0) return false;
+            return true;
+        }catch (err) {
+            console.error(`Error removing the vehicle from the courier. ${err }`);
+            return false;
+        }
     }
 
-    static async updateRouteDetails(){
-
+    static async updateArrivalTime(details: Partial<UpdateArrivalTimeDTO>): Promise<boolean>{
+        if(!details || Object.keys(details).length === 0) throw new Error('Invalid parameters in function "updateArrivalTime"');
+        try {
+            const {id, ...fieldsToUpdate} = details;
+            const [updatedVehicleRoute] = await sql`UPDATE vehicle_routes SET ${sql(fieldsToUpdate)} WHERE id = ${id} RETURNING *`;
+            if(!updatedVehicleRoute || Object.keys(updatedVehicleRoute).length === 0) return false;
+            return true;
+        }catch (err) {
+            console.error(`Error updating the arrival time. ${err }`);
+            return false;
+        }
     }
 
-    static async updateDepartureTime(){
+    static async updateRouteDetails(details: Partial<UpdateRouteDetailsDTO>): Promise<boolean>{
+        if(!details || Object.keys(details).length === 0) throw new Error('Invalid parameters in function "updateRouteDetails"');
+        try {
+            const {id, ...fieldsToUpdate} = details;
+            const [updatedVehicleRoute] = await sql`UPDATE vehicle_route SET ${sql(fieldsToUpdate)} WHERE id = ${id} RETURNING *`;
+            if(!updatedVehicleRoute || Object.keys(updatedVehicleRoute).length === 0) return false;
+            return true;
+        }catch (err) {
+            console.error(`Error updating the vehicle route details. ${err }`);
+            return false;
+        }
+    }
 
+    static async updateDepartureTime(details: Partial<UpdateDepartureTimeDTO>): Promise<boolean>{
+        if(!details || Object.keys(details).length === 0) throw new Error('Invalid parameters in function "updateDepartureTime"');
+        try {
+            const {id, ...fieldsToUpdate} = details;
+            const [updatedVehicleRoute] = await sql`UPDATE vehicle_route SET ${fieldsToUpdate} WHERE id = ${id} RETURNING *`
+            if(!updatedVehicleRoute || Object.keys(updatedVehicleRoute).length === 0) return false;
+            return true;
+        }catch (err) {
+            console.error(`Error updating the departure time. ${err }`);
+            return false;
+        }
     }
 }
