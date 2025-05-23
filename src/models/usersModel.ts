@@ -165,7 +165,7 @@ export class UserModel{
             return result;
         }catch(err){
             console.error(`Error getting all the shipments. ${err}`);
-            return [];
+            throw err;
         }
     }
 
@@ -221,7 +221,7 @@ export class UserModel{
             return newShipment || null;
         }catch(err){
             console.error(`Error creating the shipment from user. ${err}`);
-            return null;
+            throw err;
         }
     }
 }

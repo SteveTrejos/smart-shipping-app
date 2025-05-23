@@ -10,7 +10,7 @@ export class ShipmentModel{
             return result || null;
         }catch(err){
             console.error(`Error creating the shipment. ${err}`);
-            return null;
+            throw err;
         }
     }
 

@@ -76,7 +76,7 @@ export class UserController{
             }
 
             const shipments = await UserModel.getAllShipments(userId);
-            res.status(200).json(shipments);
+            res.status(200).json({shipments});
 
         } catch (err) {
             res.status(500).json({message: `Couldn't get all the shipments for user ${userId}`})
@@ -96,8 +96,8 @@ export class UserController{
                 return;
             }
             if(Object.keys(newShipment).length > 0) res.status(200).json({message: `Shipment created correctly`});
-        } catch (err) {
-            res.status(500).json({message: `Couldn't create the shipment. ${err}`})
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't create the shipment. ${err}`, error: err.message || err})
         }
     }
 }
