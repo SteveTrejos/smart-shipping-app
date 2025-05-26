@@ -14,21 +14,21 @@ export class ShipmentModel{
         }
     }
 
-    static async cancelShipmentById(shipmentId: number): Promise<boolean>{
-        if(!shipmentId) throw new Error('Invalid parameters on function "cancelShipmentById"');
+    static async cancelShipmentById(shipmentId: number, userId: number): Promise<boolean>{
+        if(!shipmentId || !userId) throw new Error('Invalid parameters on function "cancelShipmentById"');
         try{
-            const shipment = await sql`SELECT * FROM shipments WHERE id = ${shipmentId} AND shipment_status = 'A'`;
+            const shipment = await sql`SELECT * FROM shipments WHERE id = ${shipmentId} AND shipment_status = 'A' AND user_id = ${userId}`;
             if(shipment.length > 0){
             const {shipment_status} = shipment[0];
             if(shipment_status === 'P' || shipment_status === 'A'){
-                await sql`UPDATE shipments SET shipment_status = 'I' WHERE id = ${shipmentId}`;
+                await sql`UPDATE shipments SET shipment_status = 'I' WHERE id = ${shipmentId} AND user_id = ${userId}`;
                 return true;
             }
             }
             return false;
         }catch(err){
             console.error(`Error cancelling the shipment. ${err}`);
-            return false;
+            throw err;
         }
     }
 

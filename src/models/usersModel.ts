@@ -202,15 +202,15 @@ export class UserModel{
         }
     }
 
-    static async cancelShipmentById(shipmentId: number): Promise<boolean>{
-        if(!shipmentId) throw new Error('Invalid parameters on function "cancelShipmentById"');
+    static async cancelShipmentById(shipmentId: number, userId: number): Promise<boolean>{
+        if(!shipmentId || !userId) throw new Error('Invalid parameters on function "cancelShipmentById"');
         try{
-            const shipment = await ShipmentModel.cancelShipmentById(shipmentId);
+            const shipment = await ShipmentModel.cancelShipmentById(shipmentId, userId);
             if(!shipment) return false;
             return true;
         }catch(err){
             console.error(`Error cancelling the shipment from user. ${err}`);
-            return false;
+            throw err;
         }
     }
 

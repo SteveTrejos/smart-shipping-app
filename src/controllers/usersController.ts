@@ -83,6 +83,39 @@ export class UserController{
         }
     }
 
+    static async getShipmentByTrackId(req: Request, res: Response): Promise<void>{
+        const trackId = req.params.trackId;
+        try {
+            if(!trackId){
+                res.status(400).json({message: `Invalid track id`});
+                return;
+            }
+            const shipment = await UserModel.getShipmentByTrackId(trackId);
+            res.status(200).json({shipment});
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't get the shipment with track id: ${trackId}`, error: err.message})
+        }
+    }
+
+    static async cancelShipment(req: Request, res: Response): Promise<void>{
+        const {userId, shipmentId} = req.params;
+        try {
+            if(!shipmentId){
+                res.status(400).json({message: 'Invalid shipment ID'});
+                return;
+            }
+            const parsedUserId: number = Number(userId);
+            const parsedShipmentId: number = Number(shipmentId);
+            const isShipmentCanceled = await UserModel.cancelShipmentById(parsedShipmentId, parsedUserId);
+            if(!isShipmentCanceled){
+                res.status(400).json({message: `Couldn't cancel the shipment with the shipment id: ${parsedShipmentId}`});
+            }
+            res.status(200).json({message: `Shipment with id: ${parsedShipmentId} canceled correctly`});
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't cancel the shipment with the shipment id: ${shipmentId}`, error: err.message});
+        }
+    }
+
     static async createShipment(req: Request, res: Response){
         try {
             const params = req.body;
