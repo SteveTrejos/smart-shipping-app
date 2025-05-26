@@ -78,8 +78,8 @@ export class UserController{
             const shipments = await UserModel.getAllShipments(userId);
             res.status(200).json({shipments});
 
-        } catch (err) {
-            res.status(500).json({message: `Couldn't get all the shipments for user ${userId}`})
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't get all the shipments for user ${userId}`, error: err.message});
         }
     }
 
