@@ -41,7 +41,7 @@ export class UserModel{
 
     static async getUserByEmail(email: string): Promise<User | null>{
         const [user] = await sql`
-            SELECT * FROM users WHERE email = ${email}
+            SELECT * FROM users WHERE email = ${email} AND user_status = 'A'
         `;
         return user || null;
     }

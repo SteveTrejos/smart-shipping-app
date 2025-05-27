@@ -1,22 +1,47 @@
 import type { Request, Response } from "express";
 import { EmailService } from "../services/auth/email.service";
+import { AuthModel } from "../models/authModel";
+import { UserModel } from "../models/usersModel";
 
 export class AuthController{
-    static async sendPasswordRecoveryEmail(req: Request, res: Response): Promise<void>{
+    static async sendPasswordRecoveryEmail(req: Request, res: Response): Promise<void> {
         const emailTo: string = req.body.emailTo;
         try {
-            if(!emailTo){
-                res.status(400).json({message: `Invalid email. ${emailTo}`});
+            if (!emailTo) {
+                res.status(400).json({ message: `Invalid email.` });
                 return;
             }
-            const response = await EmailService.sendPasswordRecoveryEmail(emailTo);
-            if(response.error){
-                res.status(500).json({message: `An error ocurred sending the email`});
-            };
-            res.status(200).json({message: `Email sended succesfully`, data: response.data});
+            const user = await UserModel.getUserByEmail(emailTo);
+            if (!user) {
+                res.status(400).json({ message: `Email is not from a registered user.` });
+                return;
+            }
+
+            const randomCode = EmailService.generateRandomCode();
+            const newDetails = await AuthModel.insertRecoveryPassword({
+                user_id: user.id,
+                recovery_code: randomCode,
+                used: false
+            });
+
+             if (!newDetails) {
+                res.status(400).json({ message: `Error inserting recovery details.` });
+                return;
+            }
             
+            const response = await EmailService.sendPasswordRecoveryEmail(emailTo, randomCode);
+            if (response.error) {
+                res.status(500).json({ message: `Error sending the recovery email.`, error: response.error });
+                return;
+            }
+
+            res.status(200).json({
+                message: `Email sent successfully`,
+                data: response.data
+            });
+
         } catch (err: any) {
-            res.status(500).json({message: `Couldn't generate the recovery code`, error: err.message})
+            res.status(500).json({ message: `Couldn't process the recovery request`, error: err.message });
         }
     }
 }

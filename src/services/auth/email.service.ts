@@ -1,10 +1,9 @@
 import crypto from 'crypto';
 import { Resend, type CreateEmailResponseSuccess, type ErrorResponse } from 'resend';
 export class EmailService{
-    static async sendPasswordRecoveryEmail(emailTo: string): Promise<{error: ErrorResponse | null, data: CreateEmailResponseSuccess | null}> {
+    static async sendPasswordRecoveryEmail(emailTo: string, randomCode: number): Promise<{error: ErrorResponse | null, data: CreateEmailResponseSuccess | null, randomCode: number}> {
         try {
             const resend = new Resend(process.env.RESEND_API_KEY);
-            const randomCode = this.generateRandomCode();
             const { data, error } = await resend.emails.send({
                 from: 'Acme <onboarding@resend.dev>',
                 to: [emailTo],
@@ -12,8 +11,9 @@ export class EmailService{
                 text: `Hello user, your recovery code is ${randomCode}`
             });
             return {
+                data,
+                randomCode,
                 error,
-                data
             }
         } catch (err: any) {
             throw err;
