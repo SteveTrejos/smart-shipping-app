@@ -44,4 +44,43 @@ export class AuthController{
             res.status(500).json({ message: `Couldn't process the recovery request`, error: err.message });
         }
     }
+
+    static async validateRecoveryCode(req: Request, res: Response): Promise<void>{
+        try {
+            const {user_id, recovery_code: userRecoveryCode} = req.body;
+            const recoveryData = await AuthModel.getRecoveryData(user_id, userRecoveryCode);
+
+            if(!recoveryData){
+                res.status(400).json({message: `Invalid parameters`, data: recoveryData});
+                return;
+            }
+
+            const {recovery_code: dbCode, used, expiration_date} = recoveryData;
+            
+            if(Date.now() > Date.parse(expiration_date)){
+                res.status(400).json({message: `The code has expired.`});
+                return;
+            }
+
+            if(used){
+                res.status(400).json({message: `The recovery code was already used`});
+                return;
+            }
+
+            if(!dbCode){
+                res.status(400).json({message: `Invalid code. ${userRecoveryCode}`});
+                return;
+            }
+
+            if(Number(userRecoveryCode) !== Number(dbCode)){
+                res.status(400).json({message: `Invalid code. ${userRecoveryCode}`, data: recoveryData});
+                return;
+            }
+
+            res.status(200).json({message: `Code validated correctly`});
+            AuthModel.updateRecoveryDataStatus(user_id, userRecoveryCode);
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't validate the code.`, error: err.message});
+        }
+    }
 }
