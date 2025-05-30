@@ -3,6 +3,7 @@ import type { CreateRecoveryPasswordDTO } from "../dto/auth/createRecoveryPasswo
 import type { recoveryDataDTO } from "../dto/auth/recoveryData.dto";
 import { UserModel } from "./usersModel";
 import type { UserPasswordUpdateDTO } from "../dto/users/userPasswordUpdate.dto";
+import type { User } from "../interfaces/userInterface";
 
 export class AuthModel{
     static async insertRecoveryPassword(recoveryPasswordDetails: CreateRecoveryPasswordDTO){
@@ -46,6 +47,21 @@ export class AuthModel{
             const passwordUpdated = await UserModel.updatePassword(user);
             return passwordUpdated;
         } catch (err: any) {
+            throw err;
+        }
+    }
+
+    static async login(email: string, password: string): Promise<User | null>{
+        try {
+            if(!email || !password || email.length === 0 || password.length === 0) throw new Error(`Invalid parameters in login`);
+            const [user] = await sql`SELECT * FROM users WHERE email = ${email}`;
+            if(!user || Object.keys(user).length === 0) return null;
+
+            const isPasswordValid = await Bun.password.verify(password, user.password);
+            if(!isPasswordValid) return null;
+            return user;
+        }catch (err) {
+            console.error(`There was an error in the login ${err }`);
             throw err;
         }
     }

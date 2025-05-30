@@ -22,17 +22,27 @@ export class AdminModel{
     static async createAdmin(adminDetails: CreateAdminDTO): Promise<Admin | null>{
         if(!adminDetails || Object.keys(adminDetails).length === 0) throw new Error('Invalid parameters in function "createAdmin"');
         try {
-            const [newAdmin] = await sql`INSERT INTO admin VALUES(${sql(adminDetails)})`;
-            if(!newAdmin || Object.keys(newAdmin).length === 0) return null;
+            const {password, ...fieldsToCreate} = adminDetails;
+            if(!password) throw new Error('Password missing');
+            const passwordHash = await Bun.password.hash(password, {
+                algorithm: "bcrypt",
+                cost: 10
+            });
+            const newParams = {
+                ...fieldsToCreate,
+                password: passwordHash
+            }
+            const [newAdmin] = await sql`INSERT INTO admin ${sql(newParams)} RETURNING *`;
+            if(!newAdmin || Object.keys(newAdmin).length === 0) throw new Error(`Couldn't create the admin. from model. newAdmin: ${newAdmin}. newParams: ${JSON.stringify(newParams)}`);
             return newAdmin;
         }catch (err) {
             console.error(`Error creating the admin. ${err }`);
-            return null;
+            throw err;
         }
     }
 
     static async deleteAdmin(adminId: number): Promise<boolean>{
-        if(!adminId || Object.keys(adminId).length === 0) throw new Error('Invalid parameters in function "deleteAdmin"');
+        if(!adminId) throw new Error('Invalid parameters in function "deleteAdmin"');
         try {
             const [deletedAdmin] = await sql`UPDATE admin SET admin_status = 'I' WHERE id = ${adminId} RETURNING *`;
             if(!deletedAdmin || Object.keys(deletedAdmin).length === 0) return false;
@@ -44,16 +54,16 @@ export class AdminModel{
 
     }
 
-    static async updateAdmin(adminDetails: UpdateAdminDTO): Promise<boolean>{
+    static async updateAdmin(adminDetails: Partial<UpdateAdminDTO>): Promise<boolean>{
         if(!adminDetails || Object.keys(adminDetails).length === 0) throw new Error('Invalid parameters in function "updateAdmin"');
         try {
-            const {id: adminId, ...fieldsToUpdate} = adminDetails;
-            const [updatedAdmin] = await sql`UPDATE admin SET ${sql(fieldsToUpdate)} WHERE id = ${adminId} RETURNING *`
-            if(!updatedAdmin || Object.keys(updatedAdmin).length === 0) return false;
+            const {id: adminId, ...extractedDetails} = adminDetails;
+            const [updatedAdmin] = await sql`UPDATE admin SET ${sql(extractedDetails)} WHERE id = ${adminId} RETURNING *`
+            if(!updatedAdmin || Object.keys(updatedAdmin).length === 0) throw new Error(`Error updating the admin ${updatedAdmin}`);
             return true;
         }catch (err) {
             console.error(`Error updating the admin. ${err }`);
-            return false;
+            throw err;
         }
     }
 

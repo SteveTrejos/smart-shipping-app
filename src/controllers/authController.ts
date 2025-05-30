@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { EmailService } from "../services/auth/email.service";
 import { AuthModel } from "../models/authModel";
 import { UserModel } from "../models/usersModel";
+import jwt from 'jsonwebtoken';
 
 export class AuthController{
     static async sendPasswordRecoveryEmail(req: Request, res: Response): Promise<void> {
@@ -47,8 +48,8 @@ export class AuthController{
 
     static async validateRecoveryCode(req: Request, res: Response): Promise<void>{
         try {
-            const {user_id, recovery_code: userRecoveryCode} = req.body;
-            const recoveryData = await AuthModel.getRecoveryData(user_id, userRecoveryCode);
+            const {id, recovery_code: userRecoveryCode} = req.body;
+            const recoveryData = await AuthModel.getRecoveryData(id, userRecoveryCode);
 
             if(!recoveryData){
                 res.status(400).json({message: `Invalid parameters`, data: recoveryData});
@@ -78,7 +79,7 @@ export class AuthController{
             }
 
             res.status(200).json({message: `Code validated correctly`});
-            AuthModel.updateRecoveryDataStatus(user_id, userRecoveryCode);
+            AuthModel.updateRecoveryDataStatus(id, userRecoveryCode);
         } catch (err: any) {
             res.status(500).json({message: `Couldn't validate the code.`, error: err.message});
         }
@@ -95,6 +96,48 @@ export class AuthController{
             res.status(200).json({message: `Password updated correctly`});
         } catch (err: any) {
             res.status(500).json({message: `Couldn't update the password`, error: err.message});
+        }
+    }
+
+    static async login(req: Request, res: Response): Promise<void>{
+        try {
+            const {email, password} = req.body;
+
+            if(!email || !password || email.length === 0 || password.length === 0){
+                res.status(400).json({message: `Email and password are required`, data: {email, password}});
+                return;
+            }
+
+            const user = await AuthModel.login(email, password);
+
+            if(!user){
+                res.status(401).json({message: `Invalid user or password`});
+                return;
+            }
+
+            const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET!, {
+                expiresIn: '1h',
+            });
+
+            res.status(200).json({message: `User authenticated`, token});
+        } catch (err: any) {
+            res.status(500).json({message: `Invalid fields`, error: err.message});
+        }
+    }
+
+    static async createUser(req: Request, res: Response): Promise<void>{
+        try {
+            const params = {...req.body};
+            const newUser = await UserModel.createUser(params);
+
+            if(!newUser || Object.keys(newUser).length === 0){
+                res.status(400).json({message: `Not register found`, data: newUser});
+                return;
+            }
+
+            res.status(200).json({message: `User created correctly`});
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't create the user`, error: err.message});
         }
     }
 }

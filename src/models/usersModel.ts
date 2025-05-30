@@ -154,10 +154,11 @@ export class UserModel{
     static async getUserEmail(email: string): Promise<string | null>{
         if ( email === undefined || !email) throw new Error('Invalid parameters on function "validateRegisteredEmail"');
 
-        const result = await sql`
+        const [result] = await sql`
             SELECT email FROM users WHERE email = ${email}
         `;
-        return result[0].email || null;
+        if(!result) return null;
+        return result.email;
     }
 
     static async getAllShipments(userId: number): Promise<Shipment[]>{
