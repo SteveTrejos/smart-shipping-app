@@ -83,4 +83,18 @@ export class AuthController{
             res.status(500).json({message: `Couldn't validate the code.`, error: err.message});
         }
     }
+
+    static async updatePassword(req: Request, res: Response): Promise<void>{
+        try {
+            const {id, actualPassword, newPassword} = req.body;
+            const passwordUpdated = await AuthModel.updatePassword({id, actualPassword, newPassword});
+            if(!passwordUpdated || Object.keys(passwordUpdated).length === 0){
+                res.status(400).json({message: `updated data ${passwordUpdated}`});
+                return;
+            }
+            res.status(200).json({message: `Password updated correctly`});
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't update the password`, error: err.message});
+        }
+    }
 }

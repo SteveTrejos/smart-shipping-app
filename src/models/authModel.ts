@@ -1,6 +1,8 @@
 import { sql } from "bun";
 import type { CreateRecoveryPasswordDTO } from "../dto/auth/createRecoveryPassword.dto";
 import type { recoveryDataDTO } from "../dto/auth/recoveryData.dto";
+import { UserModel } from "./usersModel";
+import type { UserPasswordUpdateDTO } from "../dto/users/userPasswordUpdate.dto";
 
 export class AuthModel{
     static async insertRecoveryPassword(recoveryPasswordDetails: CreateRecoveryPasswordDTO){
@@ -34,6 +36,16 @@ export class AuthModel{
             return;
         }catch (err) {
             console.error(`Error updating the recovery status. ${err }`);
+            throw err;
+        }
+    }
+
+    static async updatePassword(user: UserPasswordUpdateDTO): Promise<boolean>{
+        if(!user || Object.keys(user).length === 0) throw new Error('Invalid user parameters in function "updatePassword" from auth');
+        try {
+            const passwordUpdated = await UserModel.updatePassword(user);
+            return passwordUpdated;
+        } catch (err: any) {
             throw err;
         }
     }

@@ -124,7 +124,6 @@ export class UserController{
             }
             const newShipment = await UserModel.createShipment(params);
             if(!newShipment){
-                console.log(newShipment)
                 res.status(400).json({message: `Couldn't create the shipment. Unable to find it`});
                 return;
             }

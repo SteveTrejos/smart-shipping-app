@@ -96,28 +96,30 @@ export class UserModel{
                 if (userIdExists === null) throw new Error(`User id doesn't exists. Can't update any register`)
             }
 
-            if (typeof newPassword !== 'string' || !isPasswordValid || typeof actualPassword !== 'string' || actualPassword.length === 0) return false;
+            if(!isPasswordValid) throw new Error(`The length or new password type is not valid`);
+
+            if (typeof newPassword !== 'string' || typeof actualPassword !== 'string' || actualPassword.length === 0) throw new Error(`Invalid parameters. ${JSON.stringify({isPasswordValid, actualPassword, newPassword})}`);
 
             const [userRegistered] = await sql`SELECT password FROM users WHERE id = ${id} `;
             const {password: registeredPassword} = userRegistered;
 
-            if(!userRegistered.password || userRegistered === undefined) return false;
+            if(!registeredPassword || userRegistered === undefined) throw new Error(`Couldn't get the password ${registeredPassword}`);
 
-            const isMatch = await Bun.password.verify(actualPassword, registeredPassword )
-            if(isMatch){
-                const bcryptNewPassword = await Bun.password.hash(newPassword, {
-                    algorithm: 'bcrypt',
-                    cost: 10
-                });
-                await sql`
-                    UPDATE users SET password = ${bcryptNewPassword} WHERE id = ${id}
-                `;
-                return true;
-            }
-            return false;
+            const isMatch = await Bun.password.verify(actualPassword, registeredPassword );
+
+            if(!isMatch) throw new Error(`Password don't match. ${typeof actualPassword} ${actualPassword} ${registeredPassword}`);
+
+            const bcryptNewPassword = await Bun.password.hash(newPassword, {
+                algorithm: 'bcrypt',
+                cost: 10
+            });
+            const result = await sql`
+                UPDATE users SET password = ${bcryptNewPassword} WHERE id = ${id} RETURNING *
+            `;
+            return result;
         }catch(err){
             console.error(`Error updating the password ${err}`);
-            return false;
+            throw err;
         }
     }
 
