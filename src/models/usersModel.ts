@@ -69,7 +69,7 @@ export class UserModel{
             return isUserUpdated;
         } catch (err) {
             console.error(`Error updating the user ${err}`);
-            return false;
+            throw err;
         }
     }
 
@@ -77,13 +77,13 @@ export class UserModel{
         try{
             const userIdExists = await this.getUserById(userId);
             if (userIdExists === null) throw new Error(`User id doesn't exists. Can't update any register`);
-            await sql`
-                UPDATE users SET user_status = 'I' WHERE id = ${userId}
+            const userUpdated = await sql`
+                UPDATE users SET user_status = 'I' WHERE id = ${userId} RETURNING *
             `;
-            return true;
+            return userUpdated;
         }catch(err){
             console.error(err);
-            return false;
+            throw err;
         }
     }
 
@@ -132,7 +132,7 @@ export class UserModel{
         return false;
     }
 
-    static async getAllUSers(limit: number, offset: number): Promise<User[]>{
+    static async getAllUsers(limit: number, offset: number): Promise<User[]>{
         try{
             if(limit > 10 || limit < 1 || offset < 0){
                 throw new Error('Invalid pagination parameters')
