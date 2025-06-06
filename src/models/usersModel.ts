@@ -175,7 +175,7 @@ export class UserModel{
     static async getAllShipmentsByUserId(userId: number): Promise<Shipment[] | []>{
         if(!userId) throw new Error('Invalid parameters in function "getAllShipmentsByUserId"');
         try {
-            const shipments = await sql`SELECT * FROM shipments WHERE user_id = ${userId}`;
+            const shipments = await sql`SELECT * FROM shipments WHERE user_id = ${userId} AND shipment_status = 'A'`;
             return shipments;
         }catch (err) {
             console.error(`Error getting all the user shipments. ${err }`);

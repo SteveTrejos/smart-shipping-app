@@ -4,41 +4,41 @@ import type { CreateVehicleDTO } from "../dto/vehicles/createVehicle.dto";
 import type { UpdateVehicleDTO } from "../dto/vehicles/updateVehicle.dto";
 
 export class VehicleModel{
-    static async createVehicle(vehicle: CreateVehicleDTO): Promise<Vehicle | null>{
+    static async createVehicle(vehicle: CreateVehicleDTO): Promise<Vehicle>{
         try {
             if(!vehicle) throw new Error('Invalid parameter in function "createVehicle"');
-            if(!vehicle || Object.keys(vehicle).length === 0) return null;
+            if(!vehicle || Object.keys(vehicle).length === 0) throw new Error('Vehicles params not found');
             const [newVehicle] = await sql`INSERT INTO vehicles ${sql(vehicle)} RETURNING *`;
             return newVehicle;
         }catch (err) {
             console.error(`Error creating the vehicle. ${err }`);
-            return null;
+            throw err;
         }
     }
 
-    static async updateVehicle(vehicle: UpdateVehicleDTO): Promise<boolean>{
+    static async updateVehicle(vehicle: UpdateVehicleDTO): Promise<Vehicle>{
         try {
             if(!vehicle) throw new Error('Invalid parameter in function "updateVehicle"');
             const {id: vehicleId, ...fieldsToUpdate} = vehicle;
-            if(!vehicleId || Object.keys(fieldsToUpdate).length === 0) return false;
+            if(!vehicleId || Object.keys(fieldsToUpdate).length === 0) throw new Error(`Invalid params`);
             const [updatedVehicle] = await sql`UPDATE vehicles SET ${sql(fieldsToUpdate)} WHERE id = ${vehicleId} RETURNING *`;
-            if(!updatedVehicle) return false;
-            return true;
+            if(!updatedVehicle || Object.keys(updatedVehicle).length === 0) throw new Error(`Couldn't update the vehicle`);
+            return updatedVehicle;
         }catch (err) {
             console.error(`Error updating the vehicle. ${err}`);
-            return false;
+            throw err;
         }
     }
 
-    static async deleteVehicle(vehicleId: number){
+    static async deleteVehicle(vehicleId: number): Promise<boolean>{
         if(!vehicleId) throw new Error('Invalid parameters in function "deleteVehicle"');
         try {
             const [deletedVehicle] = await sql`UPDATE vehicles SET vehicle_status = 'I' WHERE id = ${vehicleId} RETURNING *`;
-            if(!deletedVehicle) return false;
+            if(!deletedVehicle || Object.keys(deletedVehicle).length === 0) throw new Error(`Couldn't delete the vehicle, vehicle not found`);
             return true;
         }catch (err) {
             console.error(`Error deleting the vehicle. ${err }`);
-            return false;
+            throw err;
         }
     }
 
@@ -61,7 +61,7 @@ export class VehicleModel{
             return vehicle;
         }catch (err) {
             console.error(`Error getting the vehicle. ${err }`);
-            return null;
+            throw err;
         }
     }
 }
