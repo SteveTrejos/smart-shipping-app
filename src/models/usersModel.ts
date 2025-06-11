@@ -87,6 +87,39 @@ export class UserModel{
         }
     }
 
+    static async resetPasswordFromAdmin(userData: any){
+        try {
+            if(!userData) throw new Error('Invalid paramters in function "resetPasswordFromAdmin"')
+            const {newPassword, userId, ...fieldsToValidate} = userData;
+            const isUserValid = await this.validateUserDataToResetPassword(fieldsToValidate);
+            if(!isUserValid) throw new Error(`The user data is not valid.`);
+            if(!newPassword || !userId) throw new Error('Password and ID not found');
+            if(userId){
+                const userIdExists = await this.getUserById(userId);
+                if (userIdExists === null) throw new Error(`User id doesn't exists. Can't update any register`)
+            }
+            const bcryptNewPassword = await Bun.password.hash(newPassword, {
+                algorithm: 'bcrypt',
+                cost: 10
+            });
+            const userUpdated = await sql`UPDATE users SET password = ${bcryptNewPassword} WHERE id = ${userId} RETURNING *`;
+            return userUpdated;
+        }catch (err) {
+            throw err;
+        }
+    }
+
+    static async validateUserDataToResetPassword(userData: any): Promise<boolean>{
+        try {
+            const {name, last_name, email, phone, document_id} = userData;
+            if(!name || !last_name || !email || !phone || !document_id) throw new Error('Invalid user data');
+            const [user] = await sql`SELECT * FROM users WHERE user_status = 'A' AND name = ${name} AND last_name = ${last_name} AND email = ${email} AND phone = ${phone} AND document_id = ${document_id}`;
+            return user && Object.keys(user).length > 0;
+        } catch (err: any) {
+            throw err;
+        }
+    }
+
     static async updatePassword(user: UserPasswordUpdateDTO): Promise<boolean>{
         const {actualPassword, newPassword, id} = user;
         const isPasswordValid = this.validatePassword(newPassword);
