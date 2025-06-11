@@ -32,10 +32,7 @@ export class CourierModel{
                 SELECT * FROM couriers WHERE courier_status = 'A' ORDER BY id
             `;
         }catch(err){
-            if(err instanceof Error){
-                throw new Error(`Error getting the couriers. ${err.message}`);
-            }
-            return [];
+            throw err;
         }
     }
 
@@ -44,13 +41,10 @@ export class CourierModel{
         try{
             const {id, ...fieldsToUpdate} = courier;
             const [updatedCourier] = await sql`UPDATE couriers SET ${sql(fieldsToUpdate)} WHERE id = ${id} RETURNING *`;
-            if(!updatedCourier || Object.keys(updatedCourier).length === 0) return false;
+            if(!updatedCourier || Object.keys(updatedCourier).length === 0) throw new Error('Updated courier not found');
             return true;
         }catch(err){
-            if ( err instanceof Error){
-                throw new Error(`Error updating the courier. ${err.message}`)
-            }
-            return false;
+            throw err;
         }
     }
 
@@ -85,15 +79,12 @@ export class CourierModel{
 
     static async deleteCourier(courierId: number): Promise<boolean>{
         try{
-            if(!courierId) throw new Error('Invalid parameters in function "deleteCourier"');
-            const [updatedCourier] = await sql`UPDATE couriers SET courier_status = 'I' WHERE id = ${courierId} RETURNING *`;
-            if(!updatedCourier || Object.keys(updatedCourier).length === 0) return false;
+            if(!courierId || !Number.isInteger(courierId)) throw new Error('Invalid parameters in function "deleteCourier"');
+            const [deletedCourier] = await sql`UPDATE couriers SET courier_status = 'I' WHERE id = ${courierId} RETURNING *`;
+            if(!deletedCourier || Object.keys(deletedCourier).length === 0) throw new Error('Deleted courier not found');
             return true;
         }catch(err){
-            if(err instanceof Error){
-                throw new Error(`Error deleting the courier. ${err.message}`);
-            }
-            return false;
+            throw err;
         }
     }
 

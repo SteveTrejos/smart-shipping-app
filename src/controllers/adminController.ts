@@ -2,6 +2,8 @@ import type {Request, Response} from 'express';
 import { AdminModel } from '../models/adminModel';
 import { UserModel } from '../models/usersModel';
 import { VehicleModel } from '../models/vehicleModel';
+import { CourierModel } from '../models/couriersModel';
+import type { Courier } from '../interfaces/courierInterface';
 export class AdminController{
     static async createAdmin(req: Request, res: Response): Promise<void>{
         try {
@@ -243,6 +245,92 @@ export class AdminController{
             res.status(200).json({message: `Vehicle deleted correctly`});
         } catch (err: any) {
             res.status(500).json({message: `Couldn't delete the vehicle`, error: err.message});
+        }
+    }
+
+    static async createCourier(req: Request, res: Response): Promise<void>{
+        try {
+            const params = req.body;
+            if(!params || Object.keys(params).length === 0){
+                res.status(400).json({message: `No params for courier found`});
+                return;
+            }
+            const newCourier: Courier | null = await CourierModel.createCourier(params);
+            if(!newCourier){
+                res.status(400).json({message: `There was an error creating the courier`});
+                return;
+            }
+            res.status(200).json(`Courier created correctly`);
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't create the courier`, error: err.message});
+        }
+    }
+
+    static async getAllCouriers(req: Request, res: Response): Promise<void>{
+        try {
+            const couriers = await CourierModel.getAllCouriers();
+            if(!couriers){
+                res.status(400).json({message: `There was an error getting the couriers`});
+            }
+            res.status(200).json(couriers);
+
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't get all the couriers`, error: err.message});
+        }
+    }
+
+    static async updateCourier(req: Request, res: Response): Promise<void>{
+        try {
+            const id = req.params.courierId;
+            if(!id){
+                res.status(400).json({message: `Invalid courier ID`});
+                return;
+            }
+            const isCourierUpdated = await CourierModel.updateCourier({id, ...req.body});
+            if(!isCourierUpdated){
+                res.status(500).json({message: `There was an error updating the courier`});
+                return
+            }
+            res.status(200).json({message: `Courier updated correctly`});
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't update the courier`, error: err.message});
+        }
+    }
+
+    static async getCourierById(req: Request, res: Response): Promise<void>{
+        try {
+            const courierId = req.params.courierId;
+            if(!courierId){
+                res.status(400).json({message: `Invalid courier ID`});
+                return;
+            }
+            const courier = await CourierModel.getCourierById(Number(courierId));
+
+            if(!courier){
+                res.status(404).json({message: `Courier not found`});
+                return;
+            }
+            res.status(200).json(courier);
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't get the courier by id`, error: err.message});
+        }
+    }
+
+    static async deleteCourier(req: Request, res: Response): Promise<void>{
+        try {
+            const courierId = req.params.courierId;
+            if(!courierId){
+                res.status(400).json({message: `Invalid courier ID`});
+                return;
+            }
+            const isCourierDeleted = await CourierModel.deleteCourier(Number(courierId));
+            if(!isCourierDeleted){
+                res.status(500).json({message: `There was an error deleting the courier`});
+                return;
+            }
+            res.status(200).json({message: `Courier deleted correctly`});
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't delete the courier`, error: err.message});
         }
     }
 
