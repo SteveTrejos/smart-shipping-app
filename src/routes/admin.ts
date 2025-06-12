@@ -17,6 +17,9 @@ adminRouter.get("/admin/couriers", AdminController.getAllCouriers);
 adminRouter.patch("/admin/couriers/:courierId", AdminController.updateCourier);
 adminRouter.get("/admin/couriers/:courierId", AdminController.getCourierById);
 adminRouter.patch("/admin/couriers/:courierId/status", AdminController.deleteCourier);
+adminRouter.patch("/admin/couriers/:courierId/vehicle", AdminController.removeCourierVehicle);
+adminRouter.patch("/admin/couriers/:courierId/vehicle/:vehicleId", AdminController.assignCourierVehicle);
+adminRouter.patch("/admin/shipments/:shipmentId/vehicle/:vehicleId", AdminController.updateShipmentVehicle);
 adminRouter.patch("/admin/users/:userId/reset-password", AdminController.resetUserPassword)
 adminRouter.patch("/admin/:userId", AdminController.updateUser);
 adminRouter.patch("/admin/users/:userId/status", AdminController.deleteUser);

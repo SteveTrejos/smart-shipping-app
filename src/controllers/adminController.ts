@@ -4,6 +4,7 @@ import { UserModel } from '../models/usersModel';
 import { VehicleModel } from '../models/vehicleModel';
 import { CourierModel } from '../models/couriersModel';
 import type { Courier } from '../interfaces/courierInterface';
+import { ShipmentModel } from '../models/shipmentsModel';
 export class AdminController{
     static async createAdmin(req: Request, res: Response): Promise<void>{
         try {
@@ -347,4 +348,57 @@ export class AdminController{
         }
     }
 
+    static async assignCourierVehicle(req: Request, res: Response): Promise<void>{
+        try {
+            const {vehicleId, courierId} = req.params;
+            if(!vehicleId || !courierId){
+                res.status(400).json({message: `Invalid body params`});
+                return;
+            }
+            const updatedCourier = await CourierModel.assignCourierToVehicle(Number(courierId), Number(vehicleId));
+            if(!updatedCourier || Object.keys(updatedCourier).length === 0){
+                res.status(500).json({message: `Couldn't find the updated courier`});
+                return;
+            }
+            res.status(200).json(`Courier vehicle assigned correctly`);
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't assign the vechicle to courier`, error: err.message});
+        }
+    }
+
+    static async removeCourierVehicle(req: Request, res: Response): Promise<void>{
+        try {
+            const courierId = req.params.courierId;
+            if(!courierId){
+                res.status(400).json({message: `Invalid courier ID`});
+                return;
+            }
+            const updatedCourier = await CourierModel.removeCourierVehicle(Number(courierId));
+            if(!updatedCourier || Object.keys(updatedCourier).length === 0){
+                res.status(500).json({message: `There was an error removing the courier's vehicle`});
+                return;
+            }
+            res.status(200).json({message: `Vehicle removed correctly`});
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't remove the courier's vehicle`, error: err.message});
+        }
+    }
+
+    static async updateShipmentVehicle(req: Request, res: Response): Promise<void>{
+        try {
+            const {shipmentId, vehicleId} = req.params;
+            if(!shipmentId || !vehicleId){
+                res.status(400).json({message: `Invalid shipment or vehicle ID`});
+                return;
+            }
+            const updatedShipment = await ShipmentModel.updateShipmentVehicle(Number(shipmentId), Number(vehicleId));
+            if(!updatedShipment || Object.keys(updatedShipment).length === 0){
+                res.status(500).json({message: `There was an error updating the shipment vehicle`});
+                return;
+            }
+            res.status(200).json({message: `Shipment vehicle updated correctly`});
+        } catch (err: any) {
+            res.status(500).json({message: `Couldn't update the shipment vehicle`, erro: err.message});
+        }
+    }
 }

@@ -111,13 +111,11 @@ export class CourierModel{
             const [updatedCourier] = await sql`
                 UPDATE couriers SET vehicle_id = ${vehicleId} WHERE id = ${courierId} RETURNING *
             `;
-            if(!updatedCourier || Object.keys(updatedCourier).length === 0) return false;
-            return true;
+            if(!updatedCourier || Object.keys(updatedCourier).length === 0) throw new Error('Cannot find the updated courier');
+            return updatedCourier;
         }catch(err){
-            if(err instanceof Error){
-                throw new Error(`Error updating couriers vehicle. ${err.message}`);
-            }
-            return false;
+            console.error('There was an error trying to update the courier');
+            throw err;
         }
     }
 
@@ -125,11 +123,11 @@ export class CourierModel{
         if(!courierId) throw new Error('Invalid parameters in function "removeCourierVehicle"');
         try {
             const updatedCourier = await sql`UPDATE couriers SET vehicle_id = null WHERE id = ${courierId} RETURNING *`;
-            if(!updatedCourier || Object.keys(updatedCourier).length === 0) return false;
-            return true;
+            if(!updatedCourier || Object.keys(updatedCourier).length === 0) throw new Error('Cannot find the updated courier');
+            return updatedCourier;
         }catch (err) {
             console.error(`Error removing the vehicle from the courier. ${err }`);
-            return false;
+            throw err;
         }
     }
 
@@ -138,11 +136,11 @@ export class CourierModel{
         try {
             const {id, ...fieldsToUpdate} = details;
             const [updatedVehicleRoute] = await sql`UPDATE vehicle_routes SET ${sql(fieldsToUpdate)} WHERE id = ${id} RETURNING *`;
-            if(!updatedVehicleRoute || Object.keys(updatedVehicleRoute).length === 0) return false;
-            return true;
+            if(!updatedVehicleRoute || Object.keys(updatedVehicleRoute).length === 0) throw new Error('Cannot find the updated vehicle')
+            return updatedVehicleRoute;
         }catch (err) {
             console.error(`Error updating the arrival time. ${err }`);
-            return false;
+            throw err;
         }
     }
 

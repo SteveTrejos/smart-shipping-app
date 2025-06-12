@@ -59,11 +59,11 @@ export class ShipmentModel{
         if(!shipmentId || !vehicleId) throw new Error('Invalid parameters in function "updateShipmentVehicle"');
         try {
             const [updatedShipment] = await sql`UPDATE shipments SET vehicle_id = ${vehicleId} WHERE id = ${shipmentId} RETURNING *`;
-            if(!updatedShipment || Object.keys(updatedShipment).length === 0) return false;
-            return true;
+            if(!updatedShipment || Object.keys(updatedShipment).length === 0) throw new Error('Cannot find the updated shipment');
+            return updatedShipment;
         }catch (err) {
             console.error(`Error updating the shipment vehicle. ${err }`);
-            return false;
+            throw err;
         }
     }
 
